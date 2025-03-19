@@ -11,14 +11,7 @@ terraform {
 }
 
 provider "google" {
+  credentials = file("gcp_key.json")
   project     = "amazon-data-analysis-431706"
-  region      = "us-central-1"
-  credentials = secrets.GOOGLE_APPLICATION_CREDENTIALS
-}
-
-# An example resource that does nothing.
-resource "null_resource" "example" {
-  triggers = {
-    value = "A example resource that does nothing!"
-  }
+  region      = "us-central1"
 }
