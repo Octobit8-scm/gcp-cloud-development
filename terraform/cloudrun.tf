@@ -1,6 +1,3 @@
-data "google_project" "project" {
-}
-
 # Enable Cloud Run API
 resource "google_project_service" "cloudrun_api" {
   service            = "run.googleapis.com"
@@ -22,8 +19,8 @@ resource "google_cloud_run_v2_service" "default" {
 }
 
 resource "google_service_account" "sa" {
-  account_id   = "cloud-run-pubsub-invoker"
-  display_name = "Cloud Run Pub/Sub Invoker"
+  account_id   = "cloudrun"
+  display_name = "Cloudrun"
 }
 
 resource "google_cloud_run_service_iam_binding" "binding" {
@@ -35,7 +32,7 @@ resource "google_cloud_run_service_iam_binding" "binding" {
 
 resource "google_project_service_identity" "pubsub_agent" {
   provider = google-beta
-  project  = data.google_project.project.project_id
+  project  = "amazon-data-analysis-431706"
   service  = "pubsub.googleapis.com"
 }
 
