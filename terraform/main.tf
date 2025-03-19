@@ -11,9 +11,8 @@ terraform {
 }
 
 provider "google" {
-  credentials = file("C:\\Users\\Abhishek Srivastava\\Downloads\\amazon-data-analysis-431706-e1b93f63bfde.json")
-  project     = "amazon-data-analysis-431706"
-  region      = "us-central-1"
+  project = "amazon-data-analysis-431706"
+  region  = "us-central-1"
 }
 
 # An example resource that does nothing.
