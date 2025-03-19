@@ -1,6 +1,3 @@
-data "google_project" "project" {
-}
-
 # Enable Cloud Run API
 resource "google_project_service" "cloudrun_api" {
   service            = "run.googleapis.com"
