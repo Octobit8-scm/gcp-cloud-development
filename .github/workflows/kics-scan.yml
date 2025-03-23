@@ -1,0 +1,89 @@
+name: "KICS Scan"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  kics:
+    name: "KICS Scan"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run KICS Scan
+        id: kics_scan
+        uses: checkmarx/kics-github-action@v1.5.0
+        with:
+          path: "./terraform"
+          output_path: "./kics-results.json"
+          output_format: json
+          fail_on: high
+          queries_path: ""
+          exclude_queries: ""
+          exclude_categories: ""
+          exclude_paths: ""
+          include_queries: ""
+          include_categories: ""
+          include_paths: ""
+          platform_type: terraform
+          platform_version: 1.0
+          ignore_on_exit: true
+
+      - name: Upload KICS Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: kics-results
+          path: ./kics-results.json
+          retention-days: 7
+
+      - name: KICS Scan Summary
+        if: always()
+        run: |
+          echo "### KICS Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "./kics-results.json" ]; then
+            # Count issues by severity
+            HIGH_COUNT=$(jq -r '.results[] | select(.severity == "HIGH") | .severity' ./kics-results.json | wc -l)
+            MEDIUM_COUNT=$(jq -r '.results[] | select(.severity == "MEDIUM") | .severity' ./kics-results.json | wc -l)
+            LOW_COUNT=$(jq -r '.results[] | select(.severity == "LOW") | .severity' ./kics-results.json | wc -l)
+            INFO_COUNT=$(jq -r '.results[] | select(.severity == "INFO") | .severity' ./kics-results.json | wc -l)
+            
+            echo "#### Issue Summary" >> $GITHUB_STEP_SUMMARY
+            echo "- 🔴 High Severity: $HIGH_COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "- 🟡 Medium Severity: $MEDIUM_COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "- 🟢 Low Severity: $LOW_COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "- ℹ️ Info: $INFO_COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "$HIGH_COUNT" -gt 0 ]; then
+              echo "#### High Severity Issues" >> $GITHUB_STEP_SUMMARY
+              jq -r '.results[] | select(.severity == "HIGH") | "- **\(.query_name)**: \(.description) in \(.file_name):\(.line)"' ./kics-results.json >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            if [ "$MEDIUM_COUNT" -gt 0 ]; then
+              echo "#### Medium Severity Issues" >> $GITHUB_STEP_SUMMARY
+              jq -r '.results[] | select(.severity == "MEDIUM") | "- **\(.query_name)**: \(.description) in \(.file_name):\(.line)"' ./kics-results.json >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ No scan results available" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "#### Scan Status" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.kics_scan.outcome }}" == "success" ]; then
+            echo "✅ Scan completed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Scan failed or found high severity issues" >> $GITHUB_STEP_SUMMARY
+          fi

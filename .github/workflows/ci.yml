@@ -1,0 +1,88 @@
+name: "Terraform CI"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform:
+    name: "Terraform"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.0"
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: true
+
+      - name: Terraform Format
+        if: steps.fmt.outcome == 'failure'
+        run: |
+          terraform fmt -recursive
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          git commit -m "Terraform formatting"
+          git push
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+        env:
+          TF_VAR_project_id: ${{ secrets.TF_VAR_project_id }}
+          TF_VAR_credentials_file: ${{ secrets.TF_VAR_credentials_file }}
+
+      - name: CI Summary
+        if: always()
+        run: |
+          echo "### Terraform CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Format Check" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.fmt.outcome }}" == "success" ]; then
+            echo "✅ All files are properly formatted" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Format issues were found and automatically fixed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Validation" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.validate.outcome }}" == "success" ]; then
+            echo "✅ Configuration is valid" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Configuration validation failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Plan" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.plan.outcome }}" == "success" ]; then
+            echo "✅ Plan generated successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Plan generation failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  kics:
+    name: "KICS Security Scan"
+    needs: terraform
+    uses: ./.github/workflows/kics-scan.yml

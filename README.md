@@ -70,6 +70,55 @@ This repository contains Terraform configurations for setting up a secure and sc
    - Set your allowed IP addresses for SSH access
    - Verify the credentials_file path points to your service account key
 
+## CI/CD Pipeline
+
+This repository includes a GitHub Actions workflow that performs the following checks:
+
+1. **Terraform Format Check**
+
+   - Ensures all Terraform files are properly formatted
+   - Automatically fixes formatting issues and commits changes
+
+2. **Terraform Validation**
+
+   - Validates the Terraform configuration
+   - Checks for syntax errors and configuration issues
+
+3. **Terraform Plan**
+
+   - Generates an execution plan
+   - Shows what changes would be made to the infrastructure
+
+4. **KICS Security Scan**
+   - Performs static code analysis of Terraform configurations
+   - Identifies security vulnerabilities and misconfigurations
+   - Fails the pipeline on high-severity issues
+   - Generates detailed JSON reports
+   - Uploads scan results as artifacts
+
+The pipeline runs on:
+
+- Push to main branch
+- Pull requests to main branch
+- Manual trigger (workflow_dispatch)
+
+### Required Secrets
+
+The following secrets need to be configured in your GitHub repository:
+
+- `TF_VAR_project_id`: Your GCP project ID
+- `TF_VAR_credentials_file`: Path to your service account key file
+
+### Security Scanning
+
+The KICS (Keeping Infrastructure as Code Secure) scan:
+
+- Analyzes Terraform configurations for security best practices
+- Checks for common misconfigurations and vulnerabilities
+- Provides detailed reports with remediation steps
+- Fails the pipeline if high-severity issues are found
+- Stores scan results as artifacts for 7 days
+
 ## Setup Instructions
 
 1. Clone this repository
@@ -105,6 +154,7 @@ This repository contains Terraform configurations for setting up a secure and sc
 - Regular key rotation is configured
 - Monitoring and logging are enabled for security events
 - Service account keys should be stored securely and never committed to version control
+- Regular security scanning of infrastructure code
 
 ## Maintenance
 
@@ -113,6 +163,7 @@ This repository contains Terraform configurations for setting up a secure and sc
 - Review and update IAM permissions periodically
 - Check storage lifecycle policies and adjust retention periods
 - Rotate service account keys regularly
+- Review and address KICS scan findings
 
 ## Cleanup
 
