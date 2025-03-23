@@ -47,6 +47,7 @@ jobs:
         run: terraform init
 
       - name: Terraform Validate
+        id: validate
         run: terraform validate
 
       - name: Terraform Plan
@@ -86,3 +87,8 @@ jobs:
     name: "KICS Security Scan"
     needs: terraform
     uses: ./.github/workflows/kics-scan.yml
+    with:
+      working_directory: ./terraform
+    secrets:
+      TF_VAR_project_id: ${{ secrets.TF_VAR_project_id }}
+      TF_VAR_credentials_file: ${{ secrets.TF_VAR_credentials_file }}

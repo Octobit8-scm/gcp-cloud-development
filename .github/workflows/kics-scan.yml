@@ -2,10 +2,21 @@ name: "KICS Scan"
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      working_directory:
+        required: true
+        type: string
+        description: "Directory containing Terraform files to scan"
+    secrets:
+      TF_VAR_project_id:
+        required: true
+      TF_VAR_credentials_file:
+        required: true
 
 jobs:
   kics:
@@ -13,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./terraform
+        working-directory: ${{ inputs.working_directory }}
 
     steps:
       - name: Checkout
@@ -23,7 +34,7 @@ jobs:
         id: kics_scan
         uses: checkmarx/kics-github-action@v1.5.0
         with:
-          path: "./terraform"
+          path: "${{ inputs.working_directory }}"
           output_path: "./kics-results.json"
           output_format: json
           fail_on: high
